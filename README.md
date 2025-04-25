@@ -1,6 +1,6 @@
 @author: Gustavo Starling
 
-# Análise Climática da Região Sul do Brasil com Dados WorldClim
+# Análise climática da região sul do Brasil com dados WorldClim
 
 Este projeto tem como objetivo analisar dados climáticos históricos da Região Sul do Brasil, utilizando a base de dados WorldClim. Serão geradas estatísticas descritivas e visualizações como mapas, histogramas e boxplots para entender melhor os padrões de temperatura na região.
 
