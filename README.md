@@ -23,3 +23,7 @@ trabalho01/
 **Resultados Esperados:**
 
 Ao executar o script `main.py`, serão geradas diversas figuras (mapas de temperatura, histogramas, boxplots por mês) que serão salvas na pasta `outputs/`. Além disso, tabelas com estatísticas básicas serão impressas no console ou salvas em arquivos.
+=======
+# trabalho01
+Projeto para análise de dados climáticos da Região Sul do Brasil utilizando a base WorldClim.
+>>>>>>> 758b2618c66765c1ac3efb97d36517f355df324a
