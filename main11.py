@@ -14,6 +14,7 @@ import matplotlib.pyplot as plt
 import numpy as np # Importando numpy aqui, caso não esteja no visualizacao
 import rasterio
 import statsmodels.api as sm
+from scipy.stats import linregress
 from rasterio.plot import show
 from process_era5 import load_era5_data, combine_era5_datasets, load_south_america_shapefile, spatial_subset
 from visualizacao import (
@@ -355,23 +356,29 @@ if __name__ == "__main__":
         plt.close()
         print(f"Boxplot da precipitação média mensal salvo em '{nome_pasta_figures}'.")
                         
-        # --------------------- # Criação dos Histogramas Anuais # ---------------------
+       # --------------------- # Criação dos Histogramas Anuais # ---------------------
         
         print("\nCriando os histogramas anuais...")
         plot_annual_histogram(estatisticas_anuais_df['Temperatura Média Anual (°C)'],
-                              'Histograma da Temperatura Média Anual na Região Sul (1940-2025)',
-                              'Temperatura Média Anual (°C)', 'Frequência',
-                              'figures/histograma_temperatura_media_anual_regiao_sul.png')
-
+                                'Histograma da Temperatura Média Anual na Região Sul (1940-2025)',
+                                'Temperatura Média Anual (°C)', 'Frequência',
+                                'figures/histograma_temperatura_media_anual_regiao_sul.png')
+        
         plot_annual_histogram(estatisticas_anuais_df['Temperatura Máxima Anual (°C)'],
-                              'Histograma da Temperatura Máxima Anual na Região Sul (1940-2025)',
-                              'Temperatura Máxima Anual (°C)', 'Frequência',
-                              'figures/histograma_temperatura_maxima_anual_regiao_sul.png', color='red')
-
+                                'Histograma da Temperatura Máxima Anual na Região Sul (1940-2025)',
+                                'Temperatura Máxima Anual (°C)', 'Frequência',
+                                'figures/histograma_temperatura_maxima_anual_regiao_sul.png', color='red')
+        
         plot_annual_histogram(estatisticas_anuais_df['Precipitação Média Anual (m)'],
-                              'Histograma da Precipitação Média Anual na Região Sul (1940-2025)',
-                              'Precipitação Média Anual (m)', 'Frequência',
-                              'figures/histograma_precipitacao_anual_regiao_sul.png')
+                                'Histograma da Precipitação Média Anual na Região Sul (1940-2025)',
+                                'Precipitação Média Anual (m)', 'Frequência',
+                                'figures/histograma_precipitacao_anual_regiao_sul.png')
+        
+        # ADICIONE ESTA LINHA:
+        plot_annual_histogram(estatisticas_anuais_df['Precipitação Máxima Anual (m)'],
+                                'Histograma da Precipitação Máxima Anual na Região Sul (1940-2025)',
+                                'Precipitação Máxima Anual (m)', 'Frequência',
+                                'figures/histograma_precipitacao_maxima_anual_regiao_sul.png', color='green')
 
         # --------------------- # Criação dos Mapas de Temperatura Máxima Anual # ---------------------
         
@@ -426,35 +433,18 @@ print("\nProcesso concluído!")
 
 # ----------------------- ANÁLISE DE TENDÊNCIAS ANUAIS ---------------------
 
-import pandas as pd
-import os
-import matplotlib.pyplot as plt
-from scipy.stats import linregress
-
-# Certifique-se de que 'outputs' é o nome da sua pasta
-nome_pasta_outputs = 'outputs'
-nome_arquivo_anual = os.path.join(nome_pasta_outputs, 'estatisticas_anuais.csv')
-
-try:
-    estatisticas_anuais_df = pd.read_csv(nome_arquivo_anual)
-except FileNotFoundError:
-    print(f"Erro: Arquivo '{nome_arquivo_anual}' não encontrado.")
-    exit()
-
-print("\nDataFrame de estatísticas anuais carregado:")
-print(estatisticas_anuais_df.head())
-
-# Regressão linear e visualizar a tendência para cada variável anual
+print("\nAnálise de Tendências Anuais:")
 
 variaveis_anuais = ['Temperatura Média Anual (°C)', 'Temperatura Máxima Anual (°C)', 'Precipitação Média Anual (m)', 'Precipitação Máxima Anual (m)']
 anos = estatisticas_anuais_df['Ano'].values
-
-print("\nAnálise de Tendências Anuais:")
+nome_pasta_figures = 'figures'
+os.makedirs(nome_pasta_figures, exist_ok=True)
 
 for variavel in variaveis_anuais:
     valores = estatisticas_anuais_df[variavel].values
     slope, intercept, r_value, p_value, std_err = linregress(anos, valores)
     linha_tendencia = slope * anos + intercept
+    r_squared = r_value**2
 
     plt.figure(figsize=(10, 6))
     plt.plot(anos, valores, label=variavel)
@@ -464,62 +454,94 @@ for variavel in variaveis_anuais:
     plt.ylabel(variavel)
     plt.legend()
     plt.grid(True)
-    nome_pasta_figures = 'figures'
-    os.makedirs(nome_pasta_figures, exist_ok=True)  # Garante que a pasta 'figures' exista
     nome_arquivo_tendencia = os.path.join(nome_pasta_figures, f'tendencia_anual_{variavel.lower().replace(" ", "_")}.png')
     plt.savefig(nome_arquivo_tendencia)
     plt.close()
-    print(f"\nTendência de {variavel}: Inclinação (slope) = {slope:.4f} por ano.")
 
-print("\nGráficos de tendência anual salvos na pasta 'outputs'.")
+    tendencia_significativa = "estatisticamente significativa" if p_value < 0.05 else "não estatisticamente significativa"
+    print(f"\nTendência de {variavel}:")
+    print(f"  Inclinação (slope): {slope:.4f} por ano.")
+    print(f"  P-value: {p_value:.4f} ({tendencia_significativa}).")
+    print(f"  R-squared: {r_squared:.4f} (explica {r_squared*100:.2f}% da variabilidade).")
+    if slope > 0:
+        print("  Indica uma tendência de aumento.")
+    elif slope < 0:
+        print("  Indica uma tendência de diminuição.")
+    else:
+        print("  Não indica uma tendência clara de aumento ou diminuição.")
+
+print("\nGráficos de tendência anual salvos na pasta 'figures'.")
 
 # --------------------------------------------------
-#  ANÁLISE DE SAZONALIDADE (Média Mensal)
+#  DECOMPOSIÇÃO DA SÉRIE TEMPORAL MENSAL
 # --------------------------------------------------
 
 print("\n" + "-"*40)
-print("  ANÁLISE DE SAZONALIDADE (Média Mensal)")
+print("  DECOMPOSIÇÃO DA SÉRIE TEMPORAL MENSAL")
 print("-" * 40)
 
-# Carregar os dados mensais
-nome_arquivo_mensal = os.path.join(nome_pasta_outputs, 'estatisticas_mensais.csv')
+from statsmodels.tsa.seasonal import seasonal_decompose
+
+# Criar um índice de tempo (Year-Month)
+estatisticas_mensais_df['Data'] = pd.to_datetime(estatisticas_mensais_df['Ano'].astype(str) + '-' + estatisticas_mensais_df['Mês'].astype(str), format='%Y-%m')
+estatisticas_mensais_df.set_index('Data', inplace=True)
+
+print("\nAnálise da Decomposição da Temperatura Média Mensal:")
 try:
-    estatisticas_mensais_df = pd.read_csv(nome_arquivo_mensal)
-except FileNotFoundError:
-    print(f"Erro: Arquivo '{nome_arquivo_mensal}' não encontrado.")
-    exit()
+    decomposicao_temp = seasonal_decompose(estatisticas_mensais_df['Temperatura Média Mensal (°C)'], model='additive', period=12)
+    plt.figure(figsize=(12, 8))
+    plt.subplot(411)
+    plt.plot(estatisticas_mensais_df['Temperatura Média Mensal (°C)'], label='Original')
+    plt.legend(loc='upper left')
+    plt.subplot(412)
+    plt.plot(decomposicao_temp.trend, label='Tendência')
+    plt.legend(loc='upper left')
+    plt.subplot(413)
+    plt.plot(decomposicao_temp.seasonal, label='Sazonalidade')
+    plt.legend(loc='upper left')
+    plt.subplot(414)
+    plt.plot(decomposicao_temp.resid, label='Resíduo')
+    plt.legend(loc='upper left')
+    plt.tight_layout()
+    nome_arquivo_decomposicao_temp = os.path.join(nome_pasta_figures, 'decomposicao_temperatura_mensal.png')
+    plt.savefig(nome_arquivo_decomposicao_temp)
+    plt.close()
+    print(f"  Gráfico de decomposição salvo em '{nome_pasta_figures}'.")
+    print(f"  Tendência (primeiros e últimos valores): {decomposicao_temp.trend.iloc[0]:.2f} -> {decomposicao_temp.trend.iloc[-1]:.2f}")
+    print(f"  Padrão Sazonal (média da sazonalidade): {decomposicao_temp.seasonal.mean():.2f}")
+    print(f"  Resíduo (desvio padrão): {decomposicao_temp.resid.std():.2f} (quanto menor, melhor o ajuste).")
+except Exception as e:
+    print(f"Erro na decomposição da temperatura: {e}")
 
-# Calcular a média mensal para temperatura
-temperatura_media_mensal_sazonalidade = estatisticas_mensais_df.groupby('Mês')['Temperatura Média Mensal (°C)'].mean()
+print("\nAnálise da Decomposição da Precipitação Média Mensal:")
+try:
+    decomposicao_prec = seasonal_decompose(estatisticas_mensais_df['Precipitação Média Mensal (m)'], model='additive', period=12)
+    plt.figure(figsize=(12, 8))
+    plt.subplot(411)
+    plt.plot(estatisticas_mensais_df['Precipitação Média Mensal (m)'], label='Original')
+    plt.legend(loc='upper left')
+    plt.subplot(412)
+    plt.plot(decomposicao_prec.trend, label='Tendência')
+    plt.legend(loc='upper left')
+    plt.subplot(413)
+    plt.plot(decomposicao_prec.seasonal, label='Sazonalidade')
+    plt.legend(loc='upper left')
+    plt.subplot(414)
+    plt.plot(decomposicao_prec.resid, label='Resíduo')
+    plt.legend(loc='upper left')
+    plt.tight_layout()
+    nome_arquivo_decomposicao_prec = os.path.join(nome_pasta_figures, 'decomposicao_precipitacao_mensal.png')
+    plt.savefig(nome_arquivo_decomposicao_prec)
+    plt.close()
+    print(f"  Gráfico de decomposição salvo em '{nome_pasta_figures}'.")
+    print(f"  Tendência (primeiros e últimos valores): {decomposicao_prec.trend.iloc[0]:.2f} -> {decomposicao_prec.trend.iloc[-1]:.2f}")
+    print(f"  Padrão Sazonal (média da sazonalidade): {decomposicao_prec.seasonal.mean():.2f}")
+    print(f"  Resíduo (desvio padrão): {decomposicao_prec.resid.std():.2f} (quanto menor, melhor o ajuste).")
+except Exception as e:
+    print(f"Erro na decomposição da precipitação: {e}")
 
-# Calcular a média mensal para precipitação
-precipitacao_media_mensal_sazonalidade = estatisticas_mensais_df.groupby('Mês')['Precipitação Média Mensal (m)'].mean()
+print("\nModelo de decomposição utilizado: Aditivo (assumindo que a amplitude da sazonalidade não varia com o nível da série).")
 
-# Visualizar a sazonalidade da temperatura
-plt.figure(figsize=(10, 6))
-temperatura_media_mensal_sazonalidade.plot(kind='bar')
-plt.title('Média Mensal da Temperatura na Região Sul (1940-2025)')
-plt.xlabel('Mês')
-plt.ylabel('Temperatura Média (°C)')
-plt.xticks(rotation=0)
-plt.grid(axis='y')
-nome_arquivo_sazonalidade_temp = os.path.join(nome_pasta_figures, 'sazonalidade_temperatura_mensal.png')
-plt.savefig(nome_arquivo_sazonalidade_temp)
-plt.close()
-print(f"\nGráfico de sazonalidade da temperatura mensal salvo em '{nome_pasta_figures}'.")
-
-# Visualizar a sazonalidade da precipitação
-plt.figure(figsize=(10, 6))
-precipitacao_media_mensal_sazonalidade.plot(kind='bar')
-plt.title('Média Mensal da Precipitação na Região Sul (1940-2025)')
-plt.xlabel('Mês')
-plt.ylabel('Precipitação Média (m)')
-plt.xticks(rotation=0)
-plt.grid(axis='y')
-nome_arquivo_sazonalidade_prec = os.path.join(nome_pasta_figures, 'sazonalidade_precipitacao_mensal.png')
-plt.savefig(nome_arquivo_sazonalidade_prec)
-plt.close()
-print(f"Gráfico de sazonalidade da precipitação mensal salvo em '{nome_pasta_figures}'.")
 
 # --------------------------------------------------
 #  DECOMPOSIÇÃO DA SÉRIE TEMPORAL MENSAL
@@ -591,4 +613,33 @@ try:
 except Exception as e:
     print(f"Erro na decomposição da precipitação: {e}")
     
+    
+# -------------------------------------- # Criação das Séries Temporais Anuais # --------------------------------------
+
+print("\nCriando as séries temporais anuais...")
+
+# Carregar os dados anuais novamente
+nome_arquivo_anual = os.path.join(nome_pasta_outputs, 'estatisticas_anuais.csv')
+try:
+    estatisticas_anuais_df = pd.read_csv(nome_arquivo_anual)
+except FileNotFoundError:
+    print(f"Erro: Arquivo '{nome_arquivo_anual}' não encontrado.")
+    exit()
+
+variaveis_anuais_serie_temporal = ['Temperatura Média Anual (°C)', 'Temperatura Máxima Anual (°C)', 'Precipitação Média Anual (m)', 'Precipitação Máxima Anual (m)']
+anos = estatisticas_anuais_df['Ano'].values
+
+for variavel in variaveis_anuais_serie_temporal:
+    plt.figure(figsize=(12, 6))
+    plt.plot(anos, estatisticas_anuais_df[variavel], marker='o', linestyle='-')
+    plt.title(f'Série Temporal Anual da {variavel} na Região Sul')
+    plt.xlabel('Ano')
+    plt.ylabel(variavel)
+    plt.grid(True)
+    nome_arquivo_serie_temporal = os.path.join(nome_pasta_figures, f'serie_temporal_anual_{variavel.lower().replace(" ", "_").replace("(", "").replace(")", "").replace("°c", "").replace("m", "")}.png')
+    plt.savefig(nome_arquivo_serie_temporal)
+    plt.close()
+    print(f"Série temporal anual da {variavel} salva em '{nome_pasta_figures}'.")
+
+print("\nSéries temporais anuais salvas na pasta 'figures'.")
     
