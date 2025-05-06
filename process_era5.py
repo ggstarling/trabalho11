@@ -11,7 +11,6 @@ Módulo para processamento dos dados climáticos ERA5.
 import xarray as xr
 import os
 import geopandas as gpd
-from shapely.geometry import box
 
 # Carrega os datasets de temperatura e precipitação do ERA5
 def load_era5_data(data_dir='data'):

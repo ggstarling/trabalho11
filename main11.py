@@ -12,10 +12,8 @@ import os
 import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np # Importando numpy aqui, caso não esteja no visualizacao
-import rasterio
 import statsmodels.api as sm
 from scipy.stats import linregress
-from rasterio.plot import show
 from process_era5 import load_era5_data, combine_era5_datasets, load_south_america_shapefile, spatial_subset
 from visualizacao import (
     plot_annual_max_temperature_maps,
@@ -24,7 +22,7 @@ from visualizacao import (
     plot_annual_scatter
 )
 
-# Gera boxplot anual (estilo matplotlib) - MOVIDA PARA O NÍVEL SUPERIOR
+# Gera boxplot anual (estilo matplotlib)
 def plot_annual_boxplot(anos, dados, titulo, xlabel, ylabel, filename, color='green'):
     dados_boxplot = []
     desvio_padrao = 1.5  # Ajuste conforme necessário
@@ -544,7 +542,7 @@ print("\nModelo de decomposição utilizado: Aditivo (assumindo que a amplitude 
 
 
 # --------------------------------------------------
-#  DECOMPOSIÇÃO DA SÉRIE TEMPORAL MENSAL
+#  DECOMPOSIÇÃO DA SÉRIE TEMPORAL MENSAL (continuacao eu acho)
 # --------------------------------------------------
 
 print("\n" + "-"*40)
@@ -642,4 +640,57 @@ for variavel in variaveis_anuais_serie_temporal:
     print(f"Série temporal anual da {variavel} salva em '{nome_pasta_figures}'.")
 
 print("\nSéries temporais anuais salvas na pasta 'figures'.")
+
+# --------------------------------------------------
+#  ANÁLISE DE SAZONALIDADE (Média Mensal)
+# --------------------------------------------------
+
+print("\n" + "-"*40)
+print("  ANÁLISE DE SAZONALIDADE (Média Mensal)")
+print("-" * 40)
+
+# Calcular a média mensal para temperatura
+temperatura_media_mensal_sazonalidade = estatisticas_mensais_df.groupby('Mês')['Temperatura Média Mensal (°C)'].mean()
+
+# Calcular a média mensal para precipitação
+precipitacao_media_mensal_sazonalidade = estatisticas_mensais_df.groupby('Mês')['Precipitação Média Mensal (m)'].mean()
+
+# Visualizar a sazonalidade da temperatura
+plt.figure(figsize=(10, 6))
+temperatura_media_mensal_sazonalidade.plot(kind='bar')
+plt.title('Média Mensal da Temperatura na Região Sul (1940-2025)')
+plt.xlabel('Mês')
+plt.ylabel('Temperatura Média (°C)')
+plt.xticks(rotation=0)
+plt.grid(axis='y')
+nome_arquivo_sazonalidade_temp = os.path.join(nome_pasta_figures, 'sazonalidade_temperatura_mensal.png')
+plt.savefig(nome_arquivo_sazonalidade_temp)
+plt.close()
+print(f"\nGráfico de sazonalidade da temperatura mensal salvo em '{nome_pasta_figures}'.")
+
+print("\nPadrão Sazonal da Temperatura Média Mensal:")
+meses_nomes = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez']
+temp_max_mes = temperatura_media_mensal_sazonalidade.idxmax()
+temp_min_mes = temperatura_media_mensal_sazonalidade.idxmin()
+print(f"  Meses mais quentes (média): {meses_nomes[temp_max_mes - 1]}")
+print(f"  Meses mais frios (média): {meses_nomes[temp_min_mes - 1]}")
+
+# Visualizar a sazonalidade da precipitação
+plt.figure(figsize=(10, 6))
+precipitacao_media_mensal_sazonalidade.plot(kind='bar')
+plt.title('Média Mensal da Precipitação na Região Sul (1940-2025)')
+plt.xlabel('Mês')
+plt.ylabel('Precipitação Média (m)')
+plt.xticks(rotation=0)
+plt.grid(axis='y')
+nome_arquivo_sazonalidade_prec = os.path.join(nome_pasta_figures, 'sazonalidade_precipitacao_mensal.png')
+plt.savefig(nome_arquivo_sazonalidade_prec)
+plt.close()
+print(f"Gráfico de sazonalidade da precipitação mensal salvo em '{nome_pasta_figures}'.")
+
+print("\nPadrão Sazonal da Precipitação Média Mensal:")
+precip_max_mes = precipitacao_media_mensal_sazonalidade.idxmax()
+precip_min_mes = precipitacao_media_mensal_sazonalidade.idxmin()
+print(f"  Meses com maior precipitação (média): {meses_nomes[precip_max_mes - 1]}")
+print(f"  Meses com menor precipitação (média): {meses_nomes[precip_min_mes - 1]}")
     

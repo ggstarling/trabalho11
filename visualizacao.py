@@ -3,15 +3,10 @@
 Módulo para funções de visualização dos dados climáticos.
 """
 
-import xarray as xr
-import geopandas as gpd
 import matplotlib.pyplot as plt
 import cartopy.crs as ccrs
 import os
-import pandas as pd
-import rioxarray
 import numpy as np
-import seaborn as sns
 
 # Gera mapas da temperatura máxima anual
 
